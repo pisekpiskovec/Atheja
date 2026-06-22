@@ -39,17 +39,23 @@ class SearchTags
             return Responsivity::respond('Unauthorized', Responsivity::HTTP_Unauthorized);
 
         $model = new \Models\Tag();
-        $entry = $model->findone(['name=?', $base->get('PARAMS.tag')]);
-        if (!$entry) {
+        $tag = $model->findone(['name=?', $base->get('PARAMS.tag')]);
+        if (!$tag) {
             return Responsivity::respond('Tag not found', Responsivity::HTTP_Not_Found);
         }
-        unset($model);
         $model = new \Models\Entry();
-        $entries = $model->afind(['tags=?', $base->get('PARAMS.tag')]);
+        $tagID = $tag->_id;
+        $entryCount = $model->count([
+            'tags = ? OR tags LIKE ? OR tags LIKE ? OR tags LIKE ?',
+            '[' . $tagID . ']',
+            '[' . $tagID . ',%',
+            '%,' . $tagID . ',%',
+            '%,' . $tagID . ']'
+        ], null, 0);
 
         $cast = [
             'name' => $base->get('PARAMS.tag'),
-            'count' => $entries ? count($entries) : 0
+            'count' => $entryCount
         ];
 
         Responsivity::respond($cast);
